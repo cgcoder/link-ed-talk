@@ -1,0 +1,31 @@
+extends layout
+
+block content
+
+  script(src='/socket.io/socket.io.js')
+  script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js')
+  script(src='/javascripts/friendManager.js')
+  script(src='/javascripts/dialogManager.js')
+  link(rel='stylesheet', href='/stylesheets/style.css')
+    
+  script
+    var dialogManager = new DialogManager();
+    var friendManager = new FriendManager(dialogManager);
+    
+    $(document).ready(function() {
+      var socket = io.connect('http://localhost:3001');
+      //socket.on('connection-ok', function(data) { alert("AA"); });
+      friendManager.initSocket(socket);
+    }); 
+
+  input(type='hidden', id='userId', value='#{user}')
+  div(id='userId', style='display: none; width: 0; height: 0;')
+    #{user}
+
+  div(class='mainContainer')
+    div(class='left friendListContainer')
+      ul(class='friendList',id='friendList')
+    div(class='right chatAreaContainer', id='chatAreaContainer')
+      div(class='right')
+        p Welcome #{user}!! &nbsp;&nbsp;&nbsp; #{verifier}
+        a(href='/logout') [Logout]

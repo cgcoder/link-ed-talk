@@ -1,0 +1,12 @@
+extends layout
+
+block content
+  h1= title 
+  p Enter user name to login 
+
+  form(action="/login.do", method="post")
+    input(type="text",name="username",id="username")
+    input(type="submit",value="Login")
+  hr
+  form(action="/linkedInLogin.do", method="post")
+    input(type="submit", value="Login with LinkedIn")

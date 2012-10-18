@@ -1,0 +1,28 @@
+extends layout
+
+block content
+  p Welcome #{user}!! &nbsp;&nbsp;&nbsp;
+
+  a(href='/logout') [Logout]
+
+  script(src='/socket.io/socket.io.js')
+  script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js')
+  script(src='/javascripts/friendManager.js')
+  script(src='/javascripts/dialogManager.js')
+  link(rel='stylesheet', href='/stylesheets/style.css')
+    
+  script
+    var dialogManager = new DialogManager();
+    var friendManager = new FriendManager();
+
+    
+    $(document).ready(function() {
+      var socket = io.connect('http://localhost:3001');
+      //socket.on('connection-ok', function(data) { alert("AA"); });
+      friendManager.initSocket(socket);
+    }); 
+
+  div(class='mainContainer')
+    div(class='left leftContainer')
+      ul(class='friendListContainer',id='friendListContainer')
+    div(class='right')
