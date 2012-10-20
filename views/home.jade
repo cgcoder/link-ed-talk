@@ -18,14 +18,22 @@ block content
       friendManager.initSocket(socket);
     }); 
 
-  input(type='hidden', id='userId', value='#{user}')
+  input(type='hidden', id='userId', value='#{firstName}')
   div(id='userId', style='display: none; width: 0; height: 0;')
-    #{user}
+    
 
   div(class='mainContainer')
     div(class='left friendListContainer')
       ul(class='friendList',id='friendList')
     div(class='right chatAreaContainer', id='chatAreaContainer')
       div(class='right')
-        p Welcome #{user}!! &nbsp;&nbsp;&nbsp; #{verifier}
-        a(href='/logout') [Logout]
+        table
+          tr
+            td
+              img(src='#{pictureUrl}')
+            td
+              | #{firstName}&nbsp;&nbsp;#{lastName}
+              br
+              | #{headline}
+              br
+              a(href='/logout') Logout

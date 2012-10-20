@@ -2,11 +2,10 @@
  * Security provider
  */
 
-url = require('url')
+url = require('url');
 
 exports.sessionChecker = (function(data) {
 	return function(req, res, next) {
-		console.log(req.url.indexOf("secure"));
 
 		req_path = url.parse(req.url).pathname;
 
@@ -17,6 +16,9 @@ exports.sessionChecker = (function(data) {
 				req.linkedInToken = userStateProvider
 						.getUserToken(req.session.linkedInTokenId);
 			}
+			
+			req.userStateProvider = userStateProvider;
+			
 			next();
 		} else {
 			console.log("login required. redirecting to login page.");

@@ -68,7 +68,6 @@ exports.doLinkedInLogin = function(req, res) {
 			token = obj;
 			req.session.linkedInTokenId = token.oauthToken;
 			userStateProvider.setUserToken(req.session.linkedInTokenId, token);
-			//console.log(token.oauthToken, token.oauthTokenSecret, token.oa.getProtectedResource);
 			
 			res.redirect(token.getAuthorizeUrl());
 		}
@@ -96,6 +95,15 @@ exports.updateProfile = function(req, res) {
 			
 			linkedIn.fetchBasicProfile(
 					function(error, data) {
+						if (!error) {
+							user = eval('(' + data + ')');
+							userId = req.userStateProvider.generateUserId(user);
+							req.userStateProvider.setUserIdToken(userId, req.linkedInToken);
+							req.userStateProvider.setUser(userId, user);
+							req.session.userId = userId;
+							
+							res.redirect('http://localhost:3001' + '/secure/user/home');
+						}
 					}, 
 					req.linkedInToken);
 		}, req.linkedInToken);
@@ -105,22 +113,27 @@ exports.updateProfile = function(req, res) {
 		res.redirect('http://localhost:3001' + '/logout');
 		return;
 	}
-	
-	res.redirect('http://localhost:3001' + '/secure/user/home');
 };
 
 exports.home = function(req, res) {
-  uname = req.session.userId;
-  console.log(uname + ' rendering');
-  verifier = 'no verifier';
-  
+	
   if(req.session.linkedInToken) {
 	  if (req.session.linkedInToken.oauthVerifier) {
 		  verifier = req.session.linkedInToken.oauthVerifier;
 	  }
   }
   
-  res.render('home', {error: false, user: uname, title: uname + '\'s Home', verifier: verifier});
+  user = req.userStateProvider.getUser(req.session.userId);
+
+  model = {
+		  error: false, 
+		  firstName: user["firstName"],
+		  lastName: user["lastName"],
+		  headline: user["headline"],
+		  pictureUrl: user["pictureUrl"],
+		  title: user.firstName + '\'s Home'};
+
+  res.render('home', model);
 };
 
 exports.logout = function(req, res) {

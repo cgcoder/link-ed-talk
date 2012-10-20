@@ -62,13 +62,19 @@ app.get('/secure/user/home', user.home);
 app.get('/secure/user/updateProfile', user.updateProfile)
 
 datacache = cacheModule.cache.newCache();
-friendProvider = friendProviderModule.friendProvider;
+friendProvider = new friendProviderModule.friendProvider(app);
 
 // responsible for maintain the user states..
 userStateProvider = userStateProviderModule.userStateProvider;
 
 //handles all io communications..
 userMessager = userMessagerModule.userMessager(userStateProvider, friendProvider);
+
+app.context = {};
+app.context.friendProvider = friendProvider;
+app.context.userStateProvider = userStateProvider;
+app.context.userMessager = userMessager;
+app.context.linkedIn = linkedInModule;
 
 server = http.createServer(app).listen(app.get('port'), function() {
 	console.log("Express server listening on port " + app.get('port'));
@@ -102,9 +108,25 @@ sio.sockets.on('connection', function(socket) {
 	
 	if ( socket.handshake.session && socket.handshake.session.userId) {
 		var userId = socket.handshake.session.userId;
+		
 		userStateProvider.userIsOnline(userId, socket);
 		userMessager.initMessager(userId);
 		userMessager.sendConnectionOk(userId);
 		userMessager.onNewOnlineUser(userId);
+		
+		console.log('--' + userId + '---');
+		
+		friendProvider.refreshFriends(function(error, friendArr) {
+			if (error) {
+				console.log(error);
+				console.log("Error refreshing friend list for " + userId);
+			}
+			else {
+				console.log('friend fetch ok. fetched count : ' + friendArr.length);
+				
+				userMessager.sendFriendListReady(userId);
+			}
+			
+		}, userId);
 	}
 });

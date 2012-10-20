@@ -16,6 +16,9 @@ function FriendManager(_dialogManager) {
 		this.socket.on('connection-ok', function(data) {
 			me.handleConnectionOk(data);
 		});
+		this.socket.on('friend-list-ready', function(data) {
+			me.handleFriendListReady(data);
+		});
 		this.socket.on('refresh-friend-list-reply', function(data) {
 			me.handleRefreshFriendList(data);
 		});
@@ -41,13 +44,17 @@ function FriendManager(_dialogManager) {
 	}
 	
 	this.handleConnectionOk = function(_data) {
-		this.refreshFriendList(_data);
+		//this.refreshFriendList(_data);
 	};
 
 	this.refreshFriendList = function(_data) {
 		this.socket.emit('refresh-friend-list');
 	};
 
+	this.handleFriendListReady = function(_data) {
+		this.refreshFriendList(_data);
+	};
+	
 	this.handleRefreshFriendList = function(_friendList) {
 		for ( var i = 0; i < _friendList.length; i++) {
 			$('#friendList').append(

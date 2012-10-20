@@ -2,6 +2,7 @@ var OAuth = require('oauth').OAuth;
 var util = require('util');
 var url = require('url');
 var arrayUtils = require('./arrayUtils');
+var myUtils = require('./utils');
 // requesturl, accessurl, consumerkey, consumersecret, version
 /*
  * configuration = { :site => 'https://api.linkedin.com',
@@ -12,12 +13,14 @@ var arrayUtils = require('./arrayUtils');
 //https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress
 var requestUrl = 'https://api.linkedin.com/uas/oauth/requestToken';
 var accessUrl = 'https://api.linkedin.com/uas/oauth/accessToken';
+
 var apiKey = '9gpzg4ik7zoa';
 var secretKey = 'ju0o2AEuTgyD4Pgp';
-var userToken = '8b59736d-576a-43ce-b81a-dea50c43f1cb';
-var userSecret = '6858d22b-c871-4b1d-8c81-7200acc3251b';
+var userToken = '98591b9a-229b-4bef-9b44-42370a68980b';
+var userSecret = 'ee272150-d3b8-4895-b6cb-1c1f314a6700';
 var oauthCallback = '/linkedin/oauth_callback';
-var peopleFetchUrl = 'http://api.linkedin.com/v1/people/~';
+var peopleFetchUrl = 'http://api.linkedin.com/v1/people/~:(first-name,last-name,headline,picture-url)?format=json';
+var connectionFetchUrl = 'http://api.linkedin.com/v1/people/~/connections:(first-name,last-name,headline,picture-url)?format=json';
 
 exports.requestUrl = requestUrl;
 exports.accessUrl = accessUrl;
@@ -48,7 +51,7 @@ _validateToken = function(token) {
 			token.oa == undefined) {
 		throw "Invalid token object";
 	}
-}
+};
 
 exports.validateToken = _validateToken;
 
@@ -100,8 +103,50 @@ exports.fetchBasicProfile = function(callback, token) {
 	token.oa.getProtectedResource(linkedIn.peopleFetchUrl, "GET", 
 			token.oauthAccessToken, token.oauthAccessTokenSecret,
 			function(error, data) {
-				console.log(data);
+				callback(error, data);
 			});
+};
+
+exports.fetchConnections = function(callback, userId, token) {
+	_validateToken(token);
+	
+	if (!callback || !userId) {
+		throw "Invalid args for fetch connections.";
+	}
+	
+	fetchFunc = function(start, count, friendArray) {
+		updatedUrl = connectionFetchUrl + '&start=' + start + '&count=' + count;
+		
+		token.oa.getProtectedResource(updatedUrl, "GET", 
+				token.oauthAccessToken, token.oauthAccessTokenSecret,
+				function(error, data) {
+					if (error) {
+						callback(error, friendArray);
+					}
+					else {
+						// update next batch output
+						dataObj = eval('(' + data +')');
+						count = dataObj._count;
+						start = start + dataObj._count;
+						
+						ffor(i = 0; i < dataObj.values.length; i++) {
+							if (dataObj.values[i].firstName && 
+									dataObj.values[i].firstName != 'private') {
+								friendArray.push(dataObj.values[i]);
+							}
+						}
+						
+						if (start >= dataObj["_total"]) { // completed
+							callback(error, friendArray);
+						}
+						else { // continue
+							fetchFunc(start, count, friendArray);
+						}
+					}
+				});
+	};
+	
+	fetchFunc(0, 20, new Array());
 };
 
 exports.getLinkedInHandler = function(redirectUrl) {

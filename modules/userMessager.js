@@ -21,19 +21,19 @@ exports.userMessager = (function(_userStateProvider, _friendProvider)
     userStateProvider: _userStateProvider
 	, friendProvider: _friendProvider
 	
-	, initMessager: function(userid) {
-		var user = this.userStateProvider.getUser(userid);
-		
+	, initMessager: function(userId) {
+		var user = this.userStateProvider.getUser(userId);
+	
 		if (!user) {
-			console.log('userMessage.initMessager cannot find user ' + userid);
+			console.log('userMessage.initMessager cannot find user ' + userId);
 		}
 		else {
 			var socket = user.socket;
 			var me = this;
-			socket.on('update-friend-list', function() { me.sendUpdatedFriendList(user.id, socket); });
-			socket.on('refresh-friend-list', function() { me.sendFriendList(user.id, socket); });
-			socket.on('send-message', function(message) { me.sendMessage(user.id, socket, message); });
-			socket.on('disconnect', function(data) { me.handleDisconnect(user.id, data); });
+			socket.on('update-friend-list', function() { me.sendUpdatedFriendList(user.userId, socket); });
+			socket.on('refresh-friend-list', function() { me.sendFriendList(user.userId, socket); });
+			socket.on('send-message', function(message) { me.sendMessage(user.userId, socket, message); });
+			socket.on('disconnect', function(data) { me.handleDisconnect(user.userId, data); });
 		}
 	}
   
@@ -46,6 +46,16 @@ exports.userMessager = (function(_userStateProvider, _friendProvider)
   			console.log('error: user state not found for ' + userId);
   		}
   	}
+  	
+  	, sendFriendListReady: function(userId) {
+  		var user = this.userStateProvider.getUser(userId);
+  		if (user && user.socket) {
+  			user.socket.emit('friend-list-ready');
+  		}
+  		else {
+  			console.log('error: user state not found for ' + userId);
+  		}
+  	}
   
 	, sendFriendList: function(userId, socket) {
 		console.log('sendFriendList for ' + userId);
@@ -53,23 +63,25 @@ exports.userMessager = (function(_userStateProvider, _friendProvider)
 		if (userStateProvider.checkUserOnline(userId)) {
 			friendList = friendProvider.listFriends(userId);
 			
-			friendStatusList = arrayUtils.forEach(friendList, function(user) {
-				console.log('userid ' + user.userId);
-				return {
-					"encryptedUserId": userStateProvider.encryptUserId(user.userId), 
-					"online": userStateProvider.checkUserOnline(user.userId)
-				};
-			});
+			if (friendList) {
 			
-			socket.emit('refresh-friend-list-reply', friendStatusList);
+				arrayUtils.onEach(friendList, function(user) {
+					user.online = userStateProvider.checkUserOnline(user.userId);
+				});
+				
+				socket.emit('refresh-friend-list-reply', friendList);
+			}
+			else {
+				socket.emit('friend-list-not-available');
+			}
 		}
       }
 	
 	, onNewOnlineUser: function(userId) {
 		var friendList = this.friendProvider.listFriends(userId);
 		var onlineUser = this.userStateProvider.getUser(userId);
-		console.log(onlineUser + "(***");
-		var me = this;
+
+		/*var me = this;
 		
 		arrayUtils.forEach(friendList, function(friendUser) {
 			if(me.userStateProvider.checkUserOnline(friendUser.userId)) {
@@ -79,6 +91,7 @@ exports.userMessager = (function(_userStateProvider, _friendProvider)
 						friendUser.userId, friendState.socket);
 			}
 		});
+		*/
 	}
 	
 	, sendFriendOnline: function(newencryptedUserId, userId, socket) {
