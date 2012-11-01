@@ -113,9 +113,7 @@ sio.sockets.on('connection', function(socket) {
 		userMessager.initMessager(userId);
 		userMessager.sendConnectionOk(userId);
 		userMessager.onNewOnlineUser(userId);
-		
-		console.log('--' + userId + '---');
-		
+			
 		friendProvider.refreshFriends(function(error, friendArr) {
 			if (error) {
 				console.log(error);
@@ -123,10 +121,9 @@ sio.sockets.on('connection', function(socket) {
 			}
 			else {
 				console.log('friend fetch ok. fetched count : ' + friendArr.length);
-				
 				userMessager.sendFriendListReady(userId);
+				userMessager.afterFriendListLoaded(userId, socket);
 			}
-			
 		}, userId);
 	}
 });

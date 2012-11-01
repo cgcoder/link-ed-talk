@@ -58,40 +58,67 @@ exports.userMessager = (function(_userStateProvider, _friendProvider)
   	}
   
 	, sendFriendList: function(userId, socket) {
-		console.log('sendFriendList for ' + userId);
-		
 		if (userStateProvider.checkUserOnline(userId)) {
 			friendList = friendProvider.listFriends(userId);
 			
 			if (friendList) {
-			
-				arrayUtils.onEach(friendList, function(user) {
-					user.online = userStateProvider.checkUserOnline(user.userId);
-				});
+			    
+			    onlineFriends = arrayUtils.filter(friendList, function(user) {
+			    	return user.online;
+			    });
 				
-				socket.emit('refresh-friend-list-reply', friendList);
+				socket.emit('refresh-friend-list-reply', onlineFriends);
 			}
 			else {
 				socket.emit('friend-list-not-available');
 			}
 		}
       }
+      
+    , afterFriendListLoaded: function(userId, socket) {
+	    var friendList = this.friendProvider.listFriends(userId);
+		var onlineUser = this.userStateProvider.getUser(userId);
+		var me = this;
+
+		console.log('******'); console.log(userId);
+
+		if (friendList && onlineUser) {
+			arrayUtils.forEach(friendList, function(friendUser) {
+				if(me.userStateProvider.checkUserOnline(friendUser.userId)) {
+				    console.log("======"); console.log(friendUser.userId);
+					var friendState = me.userStateProvider.getUser(friendUser.userId);
+					me.sendFriendOnline(onlineUser.encryptedUserId, 
+							friendUser.encryptedUserId, friendState.socket);
+				}
+			});
+		}
+		else {
+			console.log('letFriendsKnowOnlineUser: no friend data for : ' + userId);
+		}
+    }
 	
 	, onNewOnlineUser: function(userId) {
+		
+	}
+	
+	, onUserWentOffline: function(userId) {
+	
 		var friendList = this.friendProvider.listFriends(userId);
 		var onlineUser = this.userStateProvider.getUser(userId);
+		var me = this;
 
-		/*var me = this;
-		
-		arrayUtils.forEach(friendList, function(friendUser) {
-			if(me.userStateProvider.checkUserOnline(friendUser.userId)) {
-				console.log("------->" + onlineUser.encryptedUserId);
-				var friendState = me.userStateProvider.getUser(friendUser.userId);
-				me.sendFriendOnline(onlineUser.encryptedUserId, 
-						friendUser.userId, friendState.socket);
-			}
-		});
-		*/
+		if (friendList && onlineUser) {
+			arrayUtils.forEach(friendList, function(friendUser) {
+				if(me.userStateProvider.checkUserOnline(friendUser.userId)) {
+					var friendState = me.userStateProvider.getUser(friendUser.userId);
+					me.sendFriendOffline(onlineUser.encryptedUserId, 
+							friendUser.encryptedUserId, friendState.socket);
+				}
+			});
+		}
+		else {
+			console.log(userId + ' ignoring sending offline message');
+		}
 	}
 	
 	, sendFriendOnline: function(newencryptedUserId, userId, socket) {
@@ -123,9 +150,9 @@ exports.userMessager = (function(_userStateProvider, _friendProvider)
 	}
 	
 	, handleDisconnect: function(userId, data) {
-		this.userStateProvider.userIsOffline(userId);
-		
+		this.onUserWentOffline(userId);
 		console.log('disconnecting ... ' + userId);
+		this.userStateProvider.userIsOffline(userId);
 	}
   };
 });

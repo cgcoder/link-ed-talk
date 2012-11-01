@@ -51,12 +51,12 @@ exports.friendProvider = function(appln) {
     					for(i = 0; i < data.length; i++) {
     						data[i].userId = me.app.context.userStateProvider.generateUserId(data[i]);
     						data[i].encryptedUserId = me.app.context.userStateProvider.generateUserId(data[i]);
-    						data[i].online = false;
+    						data[i].online = me.app.context.userStateProvider.checkUserOnline(data[i].userId);
     					}
     					
     					me.friendList[userId] = data;
-    					console.log('-----' + userId)
-    					console.log('-----' + me.friendList[userId].length);
+    					//console.log('-----' + userId)
+    					//console.log('-----' + me.friendList[userId].length);
     					me.updateFetchStatus(userId, true);
     				}
     				

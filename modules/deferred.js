@@ -1,18 +1,19 @@
-var fs = require('fs');
+//var fs = require('fs');
 
 var deferrer = {
 	newDeferred: function(asyncFunc, errFunc) {
 	
-		return {
-			funcChain: new Array(asyncFunc)
-				, lastFunc: null
-				, errFunc: errFunc
-				
-				, start: function() {
-					this._next.apply(this, arguments);
-				
-				return this;
-			}
+
+	return {
+		
+		funcChain: new Array(asyncFunc)
+		, lastFunc: null
+		, errFunc: errFunc
+		
+		, start: function() {
+			this._next.apply(this, arguments);
+			return this;
+		}
 		
 		, _next: function() {
 			if (this.funcChain.length > 0) {
@@ -82,6 +83,8 @@ var deferrer = {
 		};
 	}
 };
+
+exports.deferrer = deferrer;
 
 /*
 // example demonstrating the use of deferred..

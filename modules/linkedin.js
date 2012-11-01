@@ -3,6 +3,8 @@ var util = require('util');
 var url = require('url');
 var arrayUtils = require('./arrayUtils');
 var myUtils = require('./utils');
+var deferrer = require('./deferred').deferrer;
+
 // requesturl, accessurl, consumerkey, consumersecret, version
 /*
  * configuration = { :site => 'https://api.linkedin.com',
@@ -114,22 +116,29 @@ exports.fetchConnections = function(callback, userId, token) {
 		throw "Invalid args for fetch connections.";
 	}
 	
-	fetchFunc = function(start, count, friendArray) {
+	fd = deferrer.newDeferred(function(_d, start, count, friendArray) {
 		updatedUrl = connectionFetchUrl + '&start=' + start + '&count=' + count;
-		
+
 		token.oa.getProtectedResource(updatedUrl, "GET", 
 				token.oauthAccessToken, token.oauthAccessTokenSecret,
 				function(error, data) {
 					if (error) {
-						callback(error, friendArray);
+						_d.reject(error, data);
 					}
 					else {
-						// update next batch output
 						dataObj = eval('(' + data +')');
-						count = dataObj._count;
-						start = start + dataObj._count;
 						
-						ffor(i = 0; i < dataObj.values.length; i++) {
+						// when connections is < page size, we get only total
+						if (dataObj._count == undefined) {
+							count = dataObj._total;
+							start = start + dataObj._total;
+						}
+						else {
+							count = dataObj._count;
+							start = start + dataObj._count;
+						}
+						
+						for(i = 0; i < dataObj.values.length; i++) {
 							if (dataObj.values[i].firstName && 
 									dataObj.values[i].firstName != 'private') {
 								friendArray.push(dataObj.values[i]);
@@ -137,29 +146,29 @@ exports.fetchConnections = function(callback, userId, token) {
 						}
 						
 						if (start >= dataObj["_total"]) { // completed
-							callback(error, friendArray);
+							_d.accept(friendArray);
 						}
 						else { // continue
-							fetchFunc(start, count, friendArray);
+						    _d.again(start, count, friendArray);
 						}
 					}
 				});
-	};
+	}, 
+	function(_d, err, data) {
+	    // handle failure
+		callback(err, data);
+	}).chain(function(_d, friendArray) {
+		// handle success!
+	    callback(null, friendArray);
+	});
 	
-	fetchFunc(0, 20, new Array());
+	fd.start(0, 20, new Array());
 };
 
 exports.getLinkedInHandler = function(redirectUrl) {
 	return function(req, res) {
 		var urlParts = url.parse(req.url, true);
-		
-		console.log("$$$$$$");
-		console.log(urlParts);
-		
-		req.session.userId = 'apple';
-		
 		req.linkedInToken.oauthVerifier = urlParts.query.oauth_verifier;
-		
 		res.redirect(redirectUrl);
 	};
 };

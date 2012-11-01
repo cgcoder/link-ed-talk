@@ -91,12 +91,20 @@ function FriendManager(_dialogManager) {
 	};
 
 	this.handleFriendOnline = function(_friendOnlineUserId) {
+	
+		if (!this.friends[_friendOnlineUserId])
+		{
+			this.friends[_friendOnlineUserId] = {};
+		}
+	
 		this.friends[_friendOnlineUserId].online = true;
 		statusImg = '/images/online.png';
 		$('#img_status_' + _friendOnlineUserId).attr('src', statusImg);
+		alert(_friendOnlineUserId + ' is online');
 	};
 
 	this.handleFriendOffline = function(_friendOfflineUserId) {
+	    alert(_friendOfflineUserId + ' went offline');
 		_friendList[_friendOfflineUserId].online = false;
 	};
 

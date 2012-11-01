@@ -35,7 +35,6 @@ exports.userStateProvider = (function()
     }
 
     , checkUserOnline: function(userId) {
-    	console.log('test checkuser online ' + userId);
       return this.userStates[userId] != undefined && this.userStates[userId].online;
     }
     
